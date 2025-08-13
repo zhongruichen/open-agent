@@ -1,27 +1,75 @@
-const vscode = require('vscode');
+const fs = require('fs').promises;
 const path = require('path');
-const { TextEncoder, TextDecoder } = require('util');
+const vscode = require('vscode');
+
+// Get the root path of the workspace
+const workspaceRoot = vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri.fsPath : '.';
 
 /**
- * 向工作区写入文件
- * @param {string} relativePath 相对路径
- * @param {string} content 文件内容
- * @returns {Promise<string>} 确认信息
+ * Resolves a relative path to an absolute path within the workspace, ensuring it doesn't escape the workspace.
+ * @param {string} relativePath The relative path from the user.
+ * @returns {string} The resolved, safe absolute path.
  */
-async function writeFile(relativePath, content) { if (!vscode.workspace.workspaceFolders) { throw new Error("没有打开任何工作区。"); } const rootPath = vscode.workspace.workspaceFolders[0].uri.fsPath; const absolutePath = path.join(rootPath, relativePath); if (!absolutePath.startsWith(rootPath)) { throw new Error("文件路径在工作区之外。"); } await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.dirname(absolutePath))); const fileUri = vscode.Uri.file(absolutePath); const uint8ArrayContent = new TextEncoder().encode(content); await vscode.workspace.fs.writeFile(fileUri, uint8ArrayContent); return `成功写入文件: ${relativePath}`; }
+function getSafePath(relativePath) {
+    const absolutePath = path.resolve(workspaceRoot, relativePath);
+    if (!absolutePath.startsWith(workspaceRoot)) {
+        throw new Error("Error: Path is outside of the workspace directory. Access denied.");
+    }
+    return absolutePath;
+}
 
 /**
- * 读取工作区中的文件
- * @param {string} relativePath 相对路径
- * @returns {Promise<string>} 文件内容
+ * Writes content to a file within the workspace.
+ * @param {string} relativePath The path relative to the workspace root.
+ * @param {string} content The content to write to the file.
+ * @returns {Promise<string>} A confirmation message.
  */
-async function readFile(relativePath) { if (!vscode.workspace.workspaceFolders) { throw new Error("没有打开任何工作区。"); } const rootPath = vscode.workspace.workspaceFolders[0].uri.fsPath; const absolutePath = path.join(rootPath, relativePath); if (!absolutePath.startsWith(rootPath)) { throw new Error("文件路径在工作区之外。"); } const fileUri = vscode.Uri.file(absolutePath); const uint8ArrayContent = await vscode.workspace.fs.readFile(fileUri); return new TextDecoder().decode(uint8ArrayContent); }
+async function writeFile(relativePath, content) {
+    try {
+        const safePath = getSafePath(relativePath);
+        await fs.mkdir(path.dirname(safePath), { recursive: true });
+        await fs.writeFile(safePath, content, 'utf8');
+        return `File "${relativePath}" has been written successfully.`;
+    } catch (error) {
+        return `Error writing file: ${error.message}`;
+    }
+}
 
 /**
- * 列出工作区路径下的文件和目录
- * @param {string} relativePath 相对路径
- * @returns {Promise<string[]>} 文件和目录名列表
+ * Reads content from a file within the workspace.
+ * @param {string} relativePath The path relative to the workspace root.
+ * @returns {Promise<string>} The content of the file.
  */
-async function listFiles(relativePath = './') { if (!vscode.workspace.workspaceFolders) { throw new Error("没有打开任何工作区。"); } const rootPath = vscode.workspace.workspaceFolders[0].uri.fsPath; const absolutePath = path.join(rootPath, relativePath); if (!absolutePath.startsWith(rootPath)) { throw new Error("文件路径在工作区之外。"); } const directoryUri = vscode.Uri.file(absolutePath); const entries = await vscode.workspace.fs.readDirectory(directoryUri); return entries.map(([name, type]) => type === vscode.FileType.Directory ? `${name}/` : name); }
+async function readFile(relativePath) {
+    try {
+        const safePath = getSafePath(relativePath);
+        const content = await fs.readFile(safePath, 'utf8');
+        return content;
+    } catch (error) {
+        return `Error reading file: ${error.message}`;
+    }
+}
 
-module.exports = { writeFile, readFile, listFiles };
+/**
+ * Lists files and directories at a given path within the workspace.
+ * @param {string} relativePath The path relative to the workspace root.
+ * @returns {Promise<string>} A string containing the list of files and directories.
+ */
+async function listFiles(relativePath = './') {
+    try {
+        const safePath = getSafePath(relativePath);
+        const items = await fs.readdir(safePath, { withFileTypes: true });
+        const itemList = items.map(item => {
+            return item.isDirectory() ? `${item.name}/` : item.name;
+        }).join('\n');
+        return `Listing for "${relativePath}":\n${itemList}`;
+    } catch (error) {
+        return `Error listing files: ${error.message}`;
+    }
+}
+
+module.exports = {
+    writeFile,
+    readFile,
+    listFiles
+};

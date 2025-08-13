@@ -1,31 +1,72 @@
-const { OpenAICompatibleProvider } = require('../llm/provider.js');
-// 规划者Agent，负责将高级目标分解为计划，或根据反馈制定修复/优化计划
-class OrchestratorAgent {
-    constructor(modelConfig) { this.modelConfig = modelConfig; this.provider = new OpenAICompatibleProvider(this.modelConfig); }
-    async generatePlan(userRequest, latestIteration = null, logger = null) {
-        let systemPrompt, userPromptContent;
-        const failedTasks = latestIteration ? latestIteration.subTasks.filter(t => t.status === 'failed') : [];
-        if (failedTasks.length > 0) {
-            systemPrompt = `你是一个解决问题的专家。上一步的计划执行失败了。你的任务是分析错误报告，并制定一个全新的、简洁的计划来修复这个问题。计划中只应包含解决该错误所必需的步骤。你必须只返回一个有效的JSON字符串数组。`;
-            const errorReport = failedTasks.map(t => `任务 "${t.description}" 失败，错误: ${t.error}`).join('\n');
-            userPromptContent = `原始需求: "${userRequest}"\n\n--- 失败的任务 ---\n${errorReport}\n\n请提供一个解决这些错误的新计划。`;
-        } else if (latestIteration) {
-            systemPrompt = `你是一个项目管理专家，当前处于“精炼”循环中。你将收到原始用户需求、上一个版本的代码以及一份包含改进建议的评估报告。你的任务是创建一个全新的、简洁的子任务计划，以解决所有的建议。你必须只返回一个有效的JSON字符串数组。`;
-            userPromptContent = `原始需求: "${userRequest}"\n\n--- 上一版产品 ---\n${latestIteration.artifact}\n\n--- 改进建议 ---\n${JSON.stringify(latestIteration.evaluation.suggestions, null, 2)}`;
+const { BaseAgent } = require('./baseAgent.js');
+
+const SYSTEM_PROMPT = `You are an expert software development project manager. Your role is to decompose a user's request into a clear, step-by-step plan.
+
+You will be given the user's original request and the history of previous iterations (if any).
+Based on this information, create a concise plan of sub-tasks for the Worker Agent to execute.
+Each sub-task should be a single, actionable command for the Worker Agent. Good sub-tasks are small and focused, like "Create a file named 'index.html'" or "Install the 'uuid' package using npm".
+
+The user's request may be to create a new project from scratch or to modify an existing one.
+If this is the first iteration, create a plan to fulfill the user's request.
+If there are previous iterations, analyze the feedback from the Evaluator and create a new plan that addresses the suggestions for improvement.
+
+You must output your plan as a JSON object containing a single key "plan", which is an array of strings. Each string is a step in the plan.
+
+Example response for a request "create a hello world python script":
+{
+  "plan": [
+    "Create a file named 'main.py' with the content 'print(\"Hello, World!\")'",
+    "Execute the 'python main.py' command in the terminal to verify the output"
+  ]
+}`;
+
+class OrchestratorAgent extends BaseAgent {
+    constructor(modelConfig) {
+        super(modelConfig, SYSTEM_PROMPT);
+    }
+
+    /**
+     * Creates a plan to fulfill the user's request.
+     * @param {import('./taskContext').TaskContext} taskContext The current task context.
+     * @returns {Promise<string[]>} An array of strings representing the plan.
+     */
+    async executeTask(taskContext) {
+        let userPrompt = `Original user request: "${taskContext.originalUserRequest}"`;
+
+        const latestIteration = taskContext.getLatestIteration();
+        if (latestIteration) {
+            userPrompt += `\n\nThis is iteration number ${taskContext.currentIteration}.`;
+            userPrompt += `\nHere is the artifact from the previous iteration:\n\`\`\`\n${latestIteration.artifact}\n\`\`\``;
+            userPrompt += `\nThe evaluator scored it ${latestIteration.evaluation.score}/10 and provided the following feedback: ${latestIteration.evaluation.suggestions.join(', ')}`;
+            userPrompt += `\nPlease create a new plan to address this feedback and improve the project.`;
         } else {
-            systemPrompt = `你是一个项目规划专家。你的任务是将用户的请求分解成一系列清晰、可执行的、按顺序排列的子任务。你必须只返回一个有效的JSON字符串数组。`;
-            userPromptContent = userRequest;
+            userPrompt += `\nPlease create the initial plan to complete this request.`;
         }
-        const messages = [ { role: 'system', content: systemPrompt }, { role: 'user', content: userPromptContent } ];
-        const response = await this.provider.chatCompletion(messages, logger ? (token) => logger.log(token) : null);
+
+        const responseJson = await this.llmRequest(userPrompt, true);
         try {
-            const plan = JSON.parse(response);
-            if (Array.isArray(plan) && plan.every(item => typeof item === 'string')) { return plan; } else { throw new Error("LLM 未返回一个有效的JSON字符串数组。"); }
-        } catch (error) {
-            const jsonMatch = response.match(/```json\n([\s\S]*?)\n```/);
-            if (jsonMatch && jsonMatch[1]) { try { const plan = JSON.parse(jsonMatch[1]); if (Array.isArray(plan) && plan.every(item => typeof item === 'string')) { return plan; } } catch (e) { throw new Error("无法从提取的JSON中生成有效计划。"); } }
-            throw new Error(`无法生成有效计划。原始回复: ${response}`);
+            const responseObject = JSON.parse(responseJson);
+            if (responseObject && Array.isArray(responseObject.plan)) {
+                return responseObject.plan;
+            } else {
+                throw new Error("Response from Orchestrator Agent is not a valid plan.");
+            }
+        } catch (e) {
+            // If parsing fails, try to recover by looking for a JSON block in the response
+            const jsonMatch = responseJson.match(/```json\n([\s\S]*?)\n```/);
+            if (jsonMatch && jsonMatch[1]) {
+                try {
+                    const parsed = JSON.parse(jsonMatch[1]);
+                    if (parsed && Array.isArray(parsed.plan)) {
+                        return parsed.plan;
+                    }
+                } catch (parseError) {
+                    throw new Error(`Failed to parse plan from LLM response, even after finding a JSON block. Error: ${parseError.message}`);
+                }
+            }
+            throw new Error(`Failed to parse plan from LLM response. Error: ${e.message}`);
         }
     }
 }
+
 module.exports = { OrchestratorAgent };

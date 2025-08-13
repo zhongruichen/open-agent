@@ -1,21 +1,40 @@
-const vscode = require('vscode');
 const { exec } = require('child_process');
+const vscode = require('vscode');
+const util = require('util');
+
+const execPromise = util.promisify(exec);
+
+// Get the root path of the workspace
+const workspaceRoot = vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri.fsPath : '.';
 
 /**
- * 在用户批准后执行终端命令
- * @param {string} command 要执行的命令
- * @returns {Promise<string>} 命令的标准输出和标准错误
+ * Executes a shell command in the workspace root.
+ * @param {string} command The command to execute.
+ * @returns {Promise<string>} The stdout and stderr of the command.
  */
 async function executeCommand(command) {
-    const userChoice = await vscode.window.showWarningMessage(`一个智能体想要执行以下终端命令：\n\n${command}\n\n您是否批准？`, { modal: true }, "批准");
-    if (userChoice !== "批准") { return "用户拒绝执行该命令。"; }
-    if (!vscode.workspace.workspaceFolders) { throw new Error("没有打开任何工作区。"); }
-    const cwd = vscode.workspace.workspaceFolders[0].uri.fsPath;
-    return new Promise((resolve) => {
-        exec(command, { cwd }, (error, stdout, stderr) => {
-            if (error) { resolve(`命令执行出错: ${error.message}\nSTDOUT: ${stdout}\nSTDERR: ${stderr}`); return; }
-            resolve(`命令执行成功。\nSTDOUT: ${stdout}\nSTDERR: ${stderr}`);
-        });
-    });
+    // Security check: simple blocklist for potentially dangerous commands.
+    // A more robust solution would use a more sophisticated sandboxing approach.
+    const blocklist = ['rm -rf', 'sudo', 'mv', ':', '>'];
+    if (blocklist.some(blocked => command.includes(blocked))) {
+        return `Error: Command "${command}" is not allowed for security reasons.`;
+    }
+
+    try {
+        const { stdout, stderr } = await execPromise(command, { cwd: workspaceRoot });
+        let output = '';
+        if (stdout) {
+            output += `STDOUT:\n${stdout}\n`;
+        }
+        if (stderr) {
+            output += `STDERR:\n${stderr}\n`;
+        }
+        return output.trim() || "Command executed successfully with no output.";
+    } catch (error) {
+        return `Error executing command: ${error.message}\nSTDOUT:\n${error.stdout}\nSTDERR:\n${error.stderr}`;
+    }
 }
-module.exports = { executeCommand };
+
+module.exports = {
+    executeCommand
+};

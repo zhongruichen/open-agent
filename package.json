@@ -1,10 +1,18 @@
 {
   "name": "multi-agent-helper", "displayName": "多智能体助手", "description": "一个能够协同完成复杂软件开发任务的VS Code多智能体插件。", "version": "2.2.0", "publisher": "jules-agent",
-  "engines": { "vscode": "^1.89.0" }, "categories": [ "Other" ], "activationEvents": [ "onCommand:multi-agent-helper.startTask" ], "main": "./out/extension.js",
+"activationEvents": [ "onCommand:multi-agent-helper.startTask" ], "main": "./dist/extension.js",
   "contributes": {
     "commands": [ { "command": "multi-agent-helper.startTask", "title": "开始多智能体任务" } ],
     "configuration": { "title": "多智能体助手", "properties": { "multiAgent.models": { "type": "array", "default": [], "description": "在此处定义所有可用的语言模型。", "items": { "type": "object", "title": "模型定义", "properties": { "name": { "type": "string", "description": "为此模型定义一个唯一的名称 (例如, '我的-GPT4')。" }, "provider": { "type": "string", "description": "模型的供应商。", "enum": [ "OpenAI", "Anthropic", "Google", "Custom" ] }, "modelName": { "type": "string", "description": "要使用的模型的具体名称 (例如, 'gpt-4-turbo')。" }, "apiKey": { "type": "string", "description": "模型供应商的API密钥。", "format": "password" }, "baseUrl": { "type": "string", "description": "API端点的基础URL (用于自定义或自托管模型)。" }, "agentPrompt": { "type": "string", "description": "用于此模型的默认系统提示。", "format": "multiline" } }, "required": [ "name", "provider", "modelName", "apiKey" ] } }, "multiAgent.roleAssignments": { "type": "object", "default": {}, "description": "为每个Agent角色分配一个已定义的模型。字符串应与模型列表中的'name'匹配。", "properties": { "orchestrator": { "type": "string", "description": "用于规划和分解任务的模型。" }, "worker": { "type": "string", "description": "用于执行子任务的模型。" }, "synthesizer": { "type": "string", "description": "用于整合结果的模型。" }, "evaluator": { "type": "string", "description": "用于评估产出的模型。" } } } } }
   },
-  "scripts": { "vscode:prepublish": "npm run package", "compile": "webpack", "watch": "webpack --watch", "package": "webpack --mode production --devtool hidden-source-map", "lint": "eslint src --ext ts" },
-  "devDependencies": { "@types/vscode": "^1.89.0", "@types/mocha": "^10.0.6", "@types/node": "20.x", "typescript": "^5.4.5", "ts-loader": "^9.5.1", "webpack": "^5.91.0", "webpack-cli": "^5.1.4", "eslint": "^8.57.0", "@typescript-eslint/eslint-plugin": "^7.7.1", "@typescript-eslint/parser": "^7.7.1" }
+  "scripts": {
+    "compile": "npx esbuild src/extension.js --bundle --outfile=dist/extension.js --platform=node --external:vscode --format=cjs",
+    "watch": "npm run compile -- --watch",
+    "package": "npm run compile -- --minify",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "esbuild": "^0.20.0",
+    "eslint": "^8.57.0"
+  }
 }

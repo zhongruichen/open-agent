@@ -1,11 +1,16 @@
-// 定义JSDoc类型以便于理解
-/** @typedef {{id: string, description: string, status: 'pending' | 'in_progress' | 'completed' | 'failed', result: string | null, error: string | null}} SubTask */
-/** @typedef {{score: number, suggestions: string[]}} Evaluation */
-/** @typedef {{iteration: number, artifact: string, evaluation: Evaluation, subTasks: SubTask[]}} IterationHistory */
+/**
+ * @typedef {{id: string, description: string, status: 'pending' | 'in_progress' | 'completed' | 'failed', result: string | null, error: string | null}} SubTask
+ * @typedef {{score: number, suggestions: string[]}} Evaluation
+ * @typedef {{iteration: number, artifact: string, evaluation: Evaluation, subTasks: SubTask[]}} IterationHistory
+ */
 
-// 任务上下文管理器，负责在多步骤、多轮次的任务中跟踪所有状态
+/**
+ * Manages the state of the multi-agent task across all steps and iterations.
+ */
 class TaskContext {
-    /** @param {string} originalUserRequest 用户的原始请求 */
+    /**
+     * @param {string} originalUserRequest The user's initial request.
+     */
     constructor(originalUserRequest) {
         this.originalUserRequest = originalUserRequest;
         /** @type {SubTask[]} */
@@ -13,39 +18,82 @@ class TaskContext {
         /** @type {IterationHistory[]} */
         this.history = [];
         this.currentIteration = 1;
+        this.overallProgress = ""; // A summary of what has been done so far.
     }
 
     /**
-     * 为新一轮迭代设置计划
-     * @param {string[]} planDescriptions
+     * Sets the plan for the new iteration.
+     * @param {string[]} planDescriptions An array of strings, where each string is a sub-task description.
      */
-    setNewPlanForIteration(planDescriptions) { this.subTasks = planDescriptions.map((desc, index) => ({ id: `task_iter${this.currentIteration}_${index + 1}`, description: desc, status: 'pending', result: null, error: null, })); }
-
-    /** @returns {SubTask[]} 获取所有失败的子任务 */
-    getFailedTasks() { return this.subTasks.filter(task => task.status === 'failed'); }
-
-    /** @returns {SubTask | undefined} 获取下一个待处理的子任务 */
-    getNextPendingTask() { return this.subTasks.find(task => task.status === 'pending'); }
+    setNewPlanForIteration(planDescriptions) {
+        this.subTasks = planDescriptions.map((desc, index) => ({
+            id: `task_iter${this.currentIteration}_${index + 1}`,
+            description: desc,
+            status: 'pending',
+            result: null,
+            error: null,
+        }));
+    }
 
     /**
-     * 更新子任务的状态
+     * @returns {SubTask | undefined} The next pending sub-task.
+     */
+    getNextPendingTask() {
+        return this.subTasks.find(task => task.status === 'pending');
+    }
+
+    /**
+     * Updates the status of a sub-task.
      * @param {string} taskId
      * @param {'in_progress' | 'completed' | 'failed'} status
-     * @param {string | null} [resultOrError]
+     * @param {string | null} [resultOrError] The result of the task or an error message.
      */
     updateTaskStatus(taskId, status, resultOrError = null) {
         const task = this.subTasks.find(t => t.id === taskId);
-        if (task) { task.status = status; if (status === 'completed') { task.result = resultOrError; } else if (status === 'failed') { task.error = resultOrError; } }
+        if (task) {
+            task.status = status;
+            if (status === 'completed') {
+                task.result = resultOrError;
+                // Update overall progress summary
+                this.overallProgress += `Completed Task: ${task.description}\nResult: ${resultOrError}\n\n`;
+            } else if (status === 'failed') {
+                task.error = resultOrError;
+                this.overallProgress += `Failed Task: ${task.description}\nError: ${resultOrError}\n\n`;
+            }
+        }
     }
 
     /**
-     * 归档当前迭代的结果
-     * @param {string} artifact
-     * @param {Evaluation} evaluation
+     * Archives the results of the current iteration.
+     * @param {string} artifact The final artifact produced in this iteration.
+     * @param {Evaluation} evaluation The evaluation of the artifact.
      */
-    archiveCurrentIteration(artifact, evaluation) { this.history.push({ iteration: this.currentIteration, artifact: artifact, evaluation: evaluation, subTasks: this.subTasks }); this.currentIteration++; }
+    archiveCurrentIteration(artifact, evaluation) {
+        this.history.push({
+            iteration: this.currentIteration,
+            artifact: artifact,
+            evaluation: evaluation,
+            subTasks: JSON.parse(JSON.stringify(this.subTasks)) // Deep copy
+        });
+        this.currentIteration++;
+    }
 
-    /** @returns {IterationHistory | null} 获取最近一次的迭代历史 */
-    getLatestIteration() { return this.history.length > 0 ? this.history[this.history.length - 1] : null; }
+    /**
+     * @returns {IterationHistory | null} The most recent iteration's history.
+     */
+    getLatestIteration() {
+        return this.history.length > 0 ? this.history[this.history.length - 1] : null;
+    }
+
+    /**
+     * @returns {string} A summary of all completed sub-tasks and their results.
+     */
+    getCompletedTasksSummary() {
+        return this.subTasks
+            .filter(task => task.status === 'completed' && task.result)
+            .map(task => `Sub-task: ${task.description}\nResult:\n${task.result}`)
+            .join('\n\n---\n\n');
+    }
 }
+
 module.exports = { TaskContext };
