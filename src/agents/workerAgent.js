@@ -6,6 +6,8 @@ You have access to a set of tools to interact with the file system and a termina
 Based on the user's original request, the overall plan, the work done so far, and your current sub-task, you must decide which single tool to call.
 You must respond with a single JSON object containing the key "toolName" and a key "args" which is an object of arguments for that tool.
 
+IMPORTANT: If the task description includes a "Previous attempt failed" error message, you MUST analyze the error and propose a different approach to solve the original task. Do not repeat the failed command. For example, if a file was not found, try listing files to find the correct path. If a command failed, try a different command or use web search to find a solution.
+
 Your available tools are:
 - 'fileSystem.writeFile': Writes content to a file.
   - args: { "path": "<relative_path_to_file>", "content": "<file_content>" }

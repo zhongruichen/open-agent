@@ -52,24 +52,45 @@ function activate(context) {
                 while(subTask) {
                     taskContext.updateTaskStatus(subTask.id, 'in_progress');
                     MainPanel.update({ command: 'updatePlan', plan: taskContext.subTasks });
-                    MainPanel.update({ command: 'log', text: `Executing task: ${subTask.description}` });
+                    MainPanel.update({ command: 'log', text: `Executing task: ${subTask.description.split('\n\n')[0]}` });
 
-                    const workerResult = await worker.executeTask(subTask, taskContext);
+                    let attempts = 0;
+                    const MAX_ATTEMPTS_PER_TASK = 3;
+                    let lastError = '';
 
-                    try {
-                        if (workerResult.toolName === 'terminal.executeCommand') {
-                            const userApproval = await vscode.window.showWarningMessage(
-                                `Agent wants to execute command: \n\n${workerResult.args.command}\n\nApprove?`,
-                                { modal: true }, "Approve"
-                            );
-                            if (userApproval !== "Approve") throw new Error("User rejected terminal command.");
+                    while (attempts < MAX_ATTEMPTS_PER_TASK) {
+                        const workerResult = await worker.executeTask(subTask, taskContext);
+
+                        try {
+                            if (workerResult.toolName === 'terminal.executeCommand') {
+                                const userApproval = await vscode.window.showWarningMessage(
+                                    `Agent wants to execute command: \n\n${workerResult.args.command}\n\nApprove?`,
+                                    { modal: true }, "Approve"
+                                );
+                                if (userApproval !== "Approve") throw new Error("User rejected terminal command.");
+                            }
+                            const toolResult = await executeTool(workerResult.toolName, workerResult.args, logger);
+                            taskContext.updateTaskStatus(subTask.id, 'completed', toolResult);
+                            MainPanel.update({ command: 'log', text: `Task completed successfully.` });
+                            lastError = ''; // Clear error on success
+                            break; // Exit retry loop
+                        } catch (e) {
+                            attempts++;
+                            lastError = e.message;
+                            MainPanel.update({ command: 'log', text: `Attempt ${attempts} failed: ${lastError}` });
+                            if (attempts < MAX_ATTEMPTS_PER_TASK) {
+                                // Augment the task description with the error for the next attempt
+                                const originalDescription = subTask.description.split('\n\n')[0];
+                                subTask.description = `${originalDescription}\n\n(Previous attempt failed with error: ${lastError}). Please analyze this error and try a different approach.`;
+                                MainPanel.update({ command: 'log', text: `Retrying...` });
+                            }
                         }
-                        const toolResult = await executeTool(workerResult.toolName, workerResult.args, logger);
-                        taskContext.updateTaskStatus(subTask.id, 'completed', toolResult);
-                    } catch (e) {
-                        taskContext.updateTaskStatus(subTask.id, 'failed', e.message);
-                        MainPanel.update({ command: 'log', text: `Error executing task: ${e.message}` });
                     }
+
+                    if (lastError) {
+                        taskContext.updateTaskStatus(subTask.id, 'failed', `Failed after ${MAX_ATTEMPTS_PER_TASK} attempts. Last error: ${lastError}`);
+                    }
+
                     MainPanel.update({ command: 'updatePlan', plan: taskContext.subTasks });
                     subTask = taskContext.getNextPendingTask();
                 }
