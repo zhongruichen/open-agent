@@ -1,5 +1,6 @@
 const { writeFile, readFile, listFiles } = require('./fileSystem.js');
 const { executeCommand } = require('./terminal.js');
+const { search } = require('./webSearch.js');
 
 // The registry maps tool names to their implementation.
 const toolRegistry = {
@@ -7,6 +8,7 @@ const toolRegistry = {
     'fileSystem.readFile': readFile,
     'fileSystem.listFiles': listFiles,
     'terminal.executeCommand': executeCommand,
+    'webSearch.search': search,
 };
 
 /**
@@ -40,6 +42,8 @@ async function executeTool(toolName, args, logger) {
             result = await toolFunction(args.path || './');
         } else if (toolName === 'terminal.executeCommand') {
             result = await toolFunction(args.command);
+        } else if (toolName === 'webSearch.search') {
+            result = await toolFunction(args.query);
         } else {
             // This case should ideally not be reached if the tool is in the registry
             throw new Error(`Argument handling for tool "${toolName}" is not implemented.`);

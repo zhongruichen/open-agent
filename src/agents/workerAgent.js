@@ -15,6 +15,8 @@ Your available tools are:
   - args: { "path": "<relative_path_to_list>" }
 - 'terminal.executeCommand': Executes a shell command.
   - args: { "command": "<command_to_execute>" }
+- 'webSearch.search': Performs a web search to find information, answer questions, or get examples.
+  - args: { "query": "<search_query>" }
 
 Do not add any explanation. Just output the JSON object.
 
