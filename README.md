@@ -1,18 +1,22 @@
-# 多智能体助手 (Multi-Agent Helper)
+# Multi-Agent Helper
 
-**一个具备规划、执行、反思和自我修正能力的VS Code多智能体开发框架。**
-
----
-
-### **[➡️ 点击这里，阅读详细使用指南 (`USAGE_GUIDE.md`)](USAGE_GUIDE.md)**
+**A VS Code framework for an AI agent team with the ability to plan, execute, reflect, and self-correct.**
 
 ---
 
-## 项目概览
+## Getting Started
 
-“多智能体助手”是一个功能强大的VS Code插件，它利用一个由专业AI智能体组成的团队，来自主地执行复杂的软件开发任务。基于用户提出的一个宏大目标，这个智能体团队能够进行规划、编写代码、使用文件系统和终端工具、评估自身工作，并进行迭代式的自我修正，直至任务完成。
+1.  **Installation:** First, follow the [**INSTALL.md**](INSTALL.md) guide to build the extension and install it in VS Code.
+2.  **Configuration:** Next, follow the [**USAGE_GUIDE.md**](USAGE_GUIDE.md) to configure your AI models and assign them to agent roles in the settings.
+3.  **Run a Task:** Open the Command Palette (`Ctrl/Cmd + Shift + P`), type `Start Multi-Agent Task`, and give your AI team a goal!
 
-## 核心功能
+---
+
+## Overview
+
+Multi-Agent Helper is a powerful VS Code extension that leverages a team of specialized AI agents to autonomously handle complex software development tasks. Based on a single high-level objective from the user, this team of agents can plan, write code, use file system and terminal tools, evaluate its own work, and iteratively self-correct until the task is complete.
+
+## Core Features
 
 - **全项目感知**: 在开始任务前，能自动扫描整个项目，理解现有代码结构，从而做出更智能的规划。
 - **多智能体架构**: 由规划者、工人、整合者、评估者组成的协作团队。

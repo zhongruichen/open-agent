@@ -1,5 +1,8 @@
 {
   "name": "multi-agent-helper", "displayName": "多智能体助手", "description": "一个能够协同完成复杂软件开发任务的VS Code多智能体插件。", "version": "2.2.0", "publisher": "jules-agent",
+  "engines": {
+    "vscode": "^1.89.0"
+  },
 "activationEvents": [ "onCommand:multi-agent-helper.startTask" ], "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -99,13 +102,17 @@
     }
   },
   "scripts": {
-    "compile": "npx esbuild src/extension.js --bundle --outfile=dist/extension.js --platform=node --external:vscode --format=cjs && cp -R src/ui/assets dist/",
+    "build-js": "npx esbuild src/extension.js --bundle --outfile=dist/extension.js --platform=node --external:vscode --format=cjs",
+    "copy-assets": "cp -R src/ui/assets dist/",
+    "compile": "npm run build-js && npm run copy-assets",
     "watch": "npm run compile -- --watch",
-    "package": "npm run compile -- --minify",
-    "lint": "eslint src"
+    "bundle": "npm run build-js -- --minify && npm run copy-assets",
+    "lint": "eslint src",
+    "package-vsix": "npm run bundle && npx vsce package --no-dependencies"
   },
   "devDependencies": {
     "esbuild": "^0.20.0",
-    "eslint": "^8.57.0"
+    "eslint": "^8.57.0",
+    "@vscode/vsce": "^2.27.0"
   }
 }

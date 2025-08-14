@@ -54,6 +54,14 @@ async function scanProject(scannerAgent) {
 
 
 function activate(context) {
+
+    // Show a welcome message on first activation
+    const a_key = 'multiAgentHelper.hasBeenActivated';
+    if (!context.globalState.get(a_key)) {
+        vscode.window.showInformationMessage('Welcome to Multi-Agent Helper! Configure your AI models in the settings to get started.');
+        context.globalState.update(a_key, true);
+    }
+
     let disposable = vscode.commands.registerCommand('multi-agent-helper.startTask', async () => {
         try {
             logger.createLogChannel();

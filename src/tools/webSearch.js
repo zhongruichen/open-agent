@@ -13,7 +13,8 @@ async function search(query) {
         const results = await google_search(query);
         return results;
     } catch (error) {
-        console.error(`Error during web search: ${error.message}`);
+        // console.error is not available in this environment
+        // console.error(`Error during web search: ${error.message}`);
         return `Error: Failed to perform web search for query "${query}".`;
     }
 }
