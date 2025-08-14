@@ -3,6 +3,10 @@
   "engines": {
     "vscode": "^1.89.0"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/your-repository.git"
+  },
 "activationEvents": [ "onCommand:multi-agent-helper.startTask" ], "main": "./dist/extension.js",
   "contributes": {
     "commands": [
