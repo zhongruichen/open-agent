@@ -95,7 +95,7 @@
     }
   },
   "scripts": {
-    "compile": "npx esbuild src/extension.js --bundle --outfile=dist/extension.js --platform=node --external:vscode --format=cjs",
+    "compile": "npx esbuild src/extension.js --bundle --outfile=dist/extension.js --platform=node --external:vscode --format=cjs && cp -R src/ui/assets dist/",
     "watch": "npm run compile -- --watch",
     "package": "npm run compile -- --minify",
     "lint": "eslint src"

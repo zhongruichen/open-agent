@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Agent Task Status</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Multi-Agent Task Status</h1>
+
+    <div class="container">
+        <div class="section">
+            <h2>Overall Goal</h2>
+            <p id="overall-goal">Waiting for task to start...</p>
+        </div>
+
+        <div class="section">
+            <h2>Current Plan</h2>
+            <ul id="plan-list">
+                <!-- Plan steps will be dynamically inserted here -->
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Execution Log</h2>
+            <div id="execution-log" class="log-box">
+                <!-- Log messages will be dynamically inserted here -->
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Final Artifact</h2>
+            <pre id="final-artifact" class="code-box">
+                <code><!-- Final code/artifact will be shown here --></code>
+            </pre>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>
