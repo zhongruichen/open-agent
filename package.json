@@ -103,7 +103,7 @@
   },
   "scripts": {
     "build-js": "npx esbuild src/extension.js --bundle --outfile=dist/extension.js --platform=node --external:vscode --format=cjs",
-    "copy-assets": "cp -R src/ui/assets dist/",
+    "copy-assets": "npx copyfiles -u 1 \"src/ui/assets/**/*\" dist",
     "compile": "npm run build-js && npm run copy-assets",
     "watch": "npm run compile -- --watch",
     "bundle": "npm run build-js -- --minify && npm run copy-assets",
@@ -113,6 +113,7 @@
   "devDependencies": {
     "esbuild": "^0.20.0",
     "eslint": "^8.57.0",
-    "@vscode/vsce": "^2.27.0"
+    "@vscode/vsce": "^2.27.0",
+    "copyfiles": "^2.4.1"
   }
 }
