@@ -1,144 +1,144 @@
-# Multi-Agent Helper - Detailed Usage Guide
+# 多智能体助手 - 详细使用指南
 
-Welcome! This guide will walk you through configuring and using all the features of this extension to unleash the full potential of your AI team.
-
----
-
-## Prerequisites
-
-Before you begin, please make sure you have:
-1.  **Installed the Extension:** Follow the instructions in [**INSTALL.md**](INSTALL.md) to build and install the extension.
-2.  **Configured AI Models:** You must define at least one AI model in the VS Code settings (`multiAgent.models`) for the agents to work. The extension will not function without it.
+欢迎！本指南将带您深入了解如何配置和使用本插件的全部功能，释放AI团队的全部潜力。
 
 ---
 
-## Table of Contents
-1.  [Quick Start: Plugin Configuration](#1-quick-start-plugin-configuration)
-2.  [Tutorial: Creating Your First Project](#2-tutorial-creating-your-first-project)
-3.  [Advanced Tips & Best Practices](#3-advanced-tips--best-practices)
+## 使用前置条件
+
+在开始之前，请确保您已经：
+1.  **安装了本插件:** 请遵循 [**INSTALL.md (安装指南)**](INSTALL.md) 中的说明来构建和安装本插件。
+2.  **配置了AI模型:** 您必须在VS Code的设置中 (`multiAgent.models`) 定义至少一个AI模型，否则智能体将无法工作。
 
 ---
 
-### 1. Quick Start: Plugin Configuration
+## 目录
+1.  [快速上手：插件配置](#1-快速上手插件配置)
+2.  [实战教程：创建您的第一个项目](#2-实战教程创建您的第一个项目)
+3.  [高级技巧与最佳实践](#3-高级技巧与最佳实践)
 
-Proper configuration is half the battle. This plugin's configuration is divided into two main parts: **Model Definitions** and **Role Assignments**.
+---
 
-**How to Open Settings:**
-- Use the shortcut `Ctrl + ,` (or `Cmd + ,` on Mac) to open VS Code settings.
-- In the search bar, type `Multi Agent Helper` to find the relevant settings.
+### 1. 快速上手：插件配置
 
-#### **Part 1: Defining Available Models (`multiAgent.models`)**
+正确的配置是成功的一半。本插件的配置主要分为两个部分：**模型定义**和**角色分配**。
 
-This is a JSON array where you can define all the AI models you want your agent team to use.
+**如何打开设置：**
+- 使用快捷键 `Ctrl + ,` (或 `Cmd + ,` on Mac) 打开VS Code设置。
+- 在搜索框中输入 `Multi Agent Helper` 来找到相关配置项。
 
-- **Click `Edit in settings.json`**
-- For each model, you need to add a JSON object with the following fields:
-  - `name`: **(Required)** A **unique, memorable name** for this model configuration (e.g., "gpt-4-main"). This name will be used later in "Role Assignments".
-  - `provider`: **(Required)** The model's provider. Currently supports `OpenAI`, `Anthropic`, `Google`, `Custom`.
-  - `modelName`: **(Required)** The official name of the model you want to use (e.g., 'gpt-4-turbo-preview', 'claude-3-opus-20240229').
-  - `apiKey`: **(Required)** The API key for the corresponding provider.
-  - `baseUrl`: (Optional) The base URL for the API. This is very useful for custom or self-hosted models (like Ollama, LocalAI). You can leave it blank if using an official API.
-  - `agentPrompt`: (Optional) A default global system prompt for any Agent using this model.
+#### **第一部分：定义可用模型 (`multiAgent.models`)**
 
-**Configuration Example:**
+这是一个JSON数组，您可以在这里定义所有希望智能体团队使用的AI模型。
+
+- **点击 `在 settings.json 中编辑`**
+- 您需要为每个模型添加一个JSON对象，包含以下字段：
+  - `name`: **(必需)** 为这个模型配置起一个**唯一的、好记的名字**（例如, "gpt-4-主力"）。这个名字将在后续的“角色分配”中使用。
+  - `provider`: **(必需)** 模型的供应商。目前支持 `OpenAI`, `Anthropic`, `Google`, `Custom`。
+  - `modelName`: **(必需)** 您要使用的模型的官方名称 (例如, 'gpt-4-turbo-preview', 'claude-3-opus-20240229')。
+  - `apiKey`: **(必需)** 对应供应商的API密钥。
+  - `baseUrl`: (可选) API的基地址。对于自定义或自托管的模型（如Ollama, LocalAI）非常有用。如果使用官方API，则可以留空。
+  - `agentPrompt`: (可选) 为使用此模型的Agent设置一个默认的、全局的系统提示。
+
+**配置示例：**
 ```json
 "multiAgent.models": [
     {
-        "name": "gpt-4-main",
+        "name": "gpt-4-主力",
         "provider": "OpenAI",
         "modelName": "gpt-4-1106-preview",
         "apiKey": "sk-YourOpenAI_API_Key_Here"
     },
     {
-        "name": "claude-opus-creative",
+        "name": "claude-opus-创作",
         "provider": "Anthropic",
         "modelName": "claude-3-opus-20240229",
         "apiKey": "sk-ant-YourAnthropic_API_Key_Here"
     },
     {
-        "name": "local-coder-model",
+        "name": "本地代码模型",
         "provider": "Custom",
         "modelName": "deepseek-coder-6.7b-instruct",
-        "apiKey": "ollama", // For Ollama, the API key can be any string
+        "apiKey": "ollama", // 对于Ollama，API Key可以填写任意字符
         "baseUrl": "http://localhost:11434/v1"
     }
 ]
 ```
 
-#### **Part 2: Assigning Models to Roles (`multiAgent.roleAssignments`)**
+#### **第二部分：为角色分配模型 (`multiAgent.roleAssignments`)**
 
-Here, you can assign one of your pre-defined models to each role in your AI team.
+在这里，您可以为您AI团队中的不同角色，指定使用哪一个您上面定义好的模型。
 
-- **Click `Edit in settings.json`**
-- This is a JSON object containing the following six keys:
-  - `orchestrator`: **The Planner**. Responsible for thinking and breaking down tasks. **Recommended to use your most powerful model**.
-  - `worker`: **The Worker**. Responsible for executing specific sub-tasks (like writing code, running commands). **Can use faster or more economical models**.
-  - `synthesizer`: **The Integrator**. Responsible for combining scattered results into a complete product.
-  - `evaluationTeam`: **The Evaluation Team**. An **array** of one or more model names that will evaluate the output in parallel, enabling "wisdom of the crowd".
-  - `critiqueAggregator`: **The Critique Aggregator**. Responsible for receiving all feedback from the `evaluationTeam` and consolidating it into a final, unified review. **Recommended to use your most powerful model**.
-  - `codebaseScanner`: **The Codebase Scanner**. Responsible for scanning project files and generating summaries before the task begins. **Recommended to use a very fast model** to reduce latency.
+- **点击 `在 settings.json 中编辑`**
+- 这是一个JSON对象，包含以下六个键：
+  - `orchestrator`: **规划者**。负责思考和分解任务。**建议使用最强大的模型**。
+  - `worker`: **工人**。负责执行具体的子任务（如写代码、执行命令）。**可以使用速度更快或更经济的模型**。
+  - `synthesizer`: **整合者**。负责将零散结果组合成完整产品。
+  - `evaluationTeam`: **评估团队**。一个由一个或多个模型名称组成的**数组**，它们将并行评估产出，实现“群体智慧”。
+  - `critiqueAggregator`: **评审聚合者**。负责接收来自`evaluationTeam`的所有反馈，并将其整合成一个最终的、统一的评审意见。**建议使用最强大的模型**。
+  - `codebaseScanner`: **代码库扫描员**。在任务开始前，负责扫描项目文件并生成摘要。**建议使用速度非常快的模型**以降低延迟。
 
-**Configuration Example:**
+**配置示例：**
 ```json
 "multiAgent.roleAssignments": {
-    "orchestrator": "gpt-4-main",
-    "worker": "local-coder-model",
-    "synthesizer": "gpt-4-main",
+    "orchestrator": "gpt-4-主力",
+    "worker": "本地代码模型",
+    "synthesizer": "gpt-4-主力",
     "evaluationTeam": [
-        "claude-opus-creative",
-        "gpt-4-main"
+        "claude-opus-创作",
+        "gpt-4-主力"
     ],
-    "critiqueAggregator": "claude-opus-creative",
-    "codebaseScanner": "local-coder-model"
+    "critiqueAggregator": "claude-opus-创作",
+    "codebaseScanner": "本地代码模型"
 }
 ```
-*Tip: If a role is not assigned a model, the system will automatically use the first model defined in your `models` list as a fallback.*
+*提示：如果某个角色没有被分配模型，系统将自动使用您在`models`列表中定义的第一个模型作为备用。*
 
 ---
 
-### 2. Tutorial: Creating Your First Project
+### 2. 实战教程：创建您的第一个项目
 
-Let's walk through a concrete example: "**Create a simple HTML page with a button that shows a 'Hello, World!' alert when clicked.**"
+让我们以一个具体的例子，来走完整个流程：“**创建一个简单的HTML页面，页面包含一个按钮，点击按钮时弹出一个‘你好，世界！’的提示框。**”
 
-#### **Step 1: Start the Task**
-- Open the Command Palette (`Ctrl/Cmd + Shift + P`).
-- Type and select `Start Multi-Agent Task`.
+#### **第1步：启动任务**
+- 打开命令面板 (`Ctrl/Cmd + Shift + P`)。
+- 输入并选择 `开始多智能体任务`。
 
-#### **Step 2: Give Your Instruction**
-- In the input box that appears at the top of the screen, enter our goal:
-  `Create a simple HTML page with a button that shows a 'Hello, World!' alert when clicked.`
-- Press Enter.
+#### **第2步：下达指令**
+- 在屏幕顶部弹出的输入框中，输入我们的目标：
+  `创建一个简单的HTML页面，页面包含一个按钮，点击按钮时弹出一个‘你好，世界！’的提示框。`
+- 按下回车。
 
-#### **Step 3: Observe the AI Team at Work**
-- A new **UI Panel** titled "Multi-Agent Status" will open automatically. This is your main window into the AI's operations.
-- You will see:
-  - The **Overall Goal** you provided.
-  - The **Current Plan**, with status icons for each step (pending, in-progress, completed, failed).
-  - A real-time **Execution Log** showing which agent is working and what they are doing.
-  - The **Final Artifact** as it's being built and refined.
-- You can also open the "Output" panel and select "多智能体日志" to see more detailed, raw logs.
+#### **第3步：观察AI团队工作**
+- 一个名为“多智能体任务状态”的 **UI面板** 会自动打开。这是您观察AI行动的主窗口。
+- 在UI面板中您可以看到：
+  - 您提供的 **总体目标**。
+  - AI制定的 **当前计划**，以及每一步的状态（待处理、进行中、已完成、失败）。
+  - 一个实时的 **执行日志**，显示哪个智能体正在做什么。
+  - 正在被构建和优化的 **最终产物**。
+- 您也可以打开“输出”面板并选择“多智能体日志”来查看更详细的原始日志。
 
-#### **Step 4: Interact with the AI Team**
-During the workflow, the agents may pause and ask for your approval:
-- **Terminal Command Review:** If an agent needs to run a command like `npm install`, a yellow warning dialog will appear, showing the full command and asking you to "Approve".
-- **Refinement Loop Review:** After a full "Plan -> Execute -> Evaluate" cycle, if the resulting score is less than 10, a blue info dialog will show you the score and suggestions, asking if you want to "Continue" with optimization.
+#### **第4步：与AI团队交互**
+在工作流程中，智能体可能会暂停并请求您的批准：
+- **终端命令审核**：如果智能体需要执行`npm install`等命令，一个黄色的警告对话框会弹出，显示完整的命令并询问您是否“批准”。
+- **精炼循环审核**：当一轮“计划->执行->评估”循环完成后，如果最终产出的分数低于10分，一个蓝色的信息对话框会弹出，向您展示本轮的得分和改进建议，并询问您是否“继续”优化。
 
-#### **Step 5: Review the Final Report**
-- When the loop ends (by reaching a score of 10 or because you chose to terminate), a new tab named `Multi-Agent Task Report` will open automatically.
-- This detailed Markdown report includes:
-  - Your original request.
-  - The final score and summary.
-  - A **detailed history of each iteration**, including the score, suggestions received, and the full artifact produced in that round.
-
----
-
-### 3. Advanced Tips & Best Practices
-
-- **The Value of Good Models:** Assigning your most powerful models to the `orchestrator`, `evaluationTeam`, and `critiqueAggregator` roles is the most effective way to improve the team's performance.
-- **Clear Instructions:** The clearer and more specific your initial goal, the better the AI's initial plan will be, leading to faster and more accurate results.
-- **Trust, but Verify:** Always read terminal commands carefully before approving them to ensure they match your expectations.
-- **Embrace Iteration:** If the first version isn't perfect, let the system run for another one or two refinement cycles. The results often improve dramatically.
+#### **第5步：查阅最终报告**
+- 当循环结束（达到10分或您选择终止），一个名为`多智能体任务报告`的新标签页会自动打开。
+- 这份Markdown报告非常详尽，它包含了：
+  - 您的原始需求。
+  - 最终的得分和总结。
+  - **每一轮迭代的详细历史**，包括该轮的得分、收到的建议，以及当轮产出的完整代码。
 
 ---
 
-Thank you for using the extension! We hope this AI team becomes your trusted programming assistant.
+### 3. 高级技巧与最佳实践
+
+- **好模型的价值**：为“规划者”、“评估团队”和“评审聚合者”配置您最强大的模型，是提升整个团队表现最有效的方式。
+- **清晰的指令**：您最初下达的任务目标越清晰、越具体，AI团队的初始计划就越好，也能更快地达到完美的结果。
+- **信任但要核实**：在批准终端命令时，请务_x0008_必仔细阅读智能体想要执行的命令，确保其符合您的预期。
+- **利用迭代**：如果第一版结果不完美，让系统继续进行一两轮优化，通常能极大地改善结果质量。
+
+---
+
+感谢使用！希望这个AI团队能成为您得力的编程助手。

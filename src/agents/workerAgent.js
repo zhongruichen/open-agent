@@ -1,33 +1,33 @@
 const { BaseAgent } = require('./baseAgent.js');
 
-const SYSTEM_PROMPT = `You are a Worker Agent. Your job is to execute a single task given to you by the Project Manager.
-You have access to a set of tools to interact with the file system and a terminal.
+const SYSTEM_PROMPT = `你是一个“工人”智能体。你的工作是执行项目经理分配给你的单个任务。
+你可以使用一组工具来与文件系统和终端进行交互。
 
-Based on the user's original request, the overall plan, the work done so far, and your current sub-task, you must decide which single tool to call.
-You must respond with a single JSON object containing the key "toolName" and a key "args" which is an object of arguments for that tool.
+基于用户的原始请求、总体计划、至今已完成的工作以及你当前的子任务，你必须决定调用哪一个工具。
+你必须以一个只包含 "toolName" 和 "args" 键的JSON对象作为响应，其中 "args" 是该工具的参数对象。
 
-IMPORTANT: If the task description includes a "Previous attempt failed" error message, you MUST analyze the error and propose a different approach to solve the original task. Do not repeat the failed command. For example, if a file was not found, try listing files to find the correct path. If a command failed, try a different command or use web search to find a solution.
+重要提示：如果任务描述中包含“前一次尝试失败”的错误信息，你必须分析该错误并提出一种不同的方法来解决原始任务。不要重复失败的命令。例如，如果文件未找到，请尝试列出文件以找到正确的路径。如果命令失败，请尝试不同的命令或使用网络搜索来寻找解决方案。
 
-Your available tools are:
-- 'fileSystem.writeFile': Writes content to a file.
-  - args: { "path": "<relative_path_to_file>", "content": "<file_content>" }
-- 'fileSystem.readFile': Reads the content of a file.
-  - args: { "path": "<relative_path_to_file>" }
-- 'fileSystem.listFiles': Lists files and directories at a path.
-  - args: { "path": "<relative_path_to_list>" }
-- 'terminal.executeCommand': Executes a shell command.
-  - args: { "command": "<command_to_execute>" }
-- 'webSearch.search': Performs a web search to find information, answer questions, or get examples.
-  - args: { "query": "<search_query>" }
+你可用的工具有：
+- 'fileSystem.writeFile': 向文件写入内容。
+  - args: { "path": "<文件的相对路径>", "content": "<文件内容>" }
+- 'fileSystem.readFile': 读取文件内容。
+  - args: { "path": "<文件的相对路径>" }
+- 'fileSystem.listFiles': 列出路径下的文件和目录。
+  - args: { "path": "<要列出的相对路径>" }
+- 'terminal.executeCommand': 执行一个shell命令。
+  - args: { "command": "<要执行的命令>" }
+- 'webSearch.search': 执行网络搜索以查找信息、回答问题或获取示例。
+  - args: { "query": "<搜索查询>" }
 
-Do not add any explanation. Just output the JSON object.
+不要添加任何解释。只输出JSON对象。
 
-Example response for the task "Create a file named 'index.html' with the content '<h1>Hello</h1>'":
+例如，对于任务“创建一个名为 'index.html' 的文件，内容为 '<h1>你好</h1>'”的响应：
 {
   "toolName": "fileSystem.writeFile",
   "args": {
     "path": "index.html",
-    "content": "<h1>Hello</h1>"
+    "content": "<h1>你好</h1>"
   }
 }`;
 
@@ -43,10 +43,10 @@ class WorkerAgent extends BaseAgent {
      * @returns {Promise<{toolName: string, args: object}>} The tool call to be executed.
      */
     async executeTask(subTask, taskContext) {
-        let userPrompt = `The original user request was: "${taskContext.originalUserRequest}"`;
-        userPrompt += `\n\nHere is the overall progress so far:\n${taskContext.overallProgress}`;
-        userPrompt += `\n\nYour current task is: "${subTask.description}"`;
-        userPrompt += `\nPlease decide which tool to use to complete this task and provide the corresponding JSON output.`;
+        let userPrompt = `原始用户请求是: "${taskContext.originalUserRequest}"`;
+        userPrompt += `\n\n这是到目前为止的总体进展:\n${taskContext.overallProgress}`;
+        userPrompt += `\n\n你当前的任务是: "${subTask.description}"`;
+        userPrompt += `\n请决定使用哪个工具来完成此任务，并提供相应的JSON输出。`;
 
         const responseJson = await this.llmRequest(userPrompt, true);
         try {
@@ -54,10 +54,9 @@ class WorkerAgent extends BaseAgent {
             if (responseObject && responseObject.toolName && responseObject.args) {
                 return responseObject;
             } else {
-                throw new Error("Response from Worker Agent is not a valid tool call.");
+                throw new Error("来自工人智能体的响应不是一个有效的工具调用。");
             }
         } catch (e) {
-            // If parsing fails, try to recover by looking for a JSON block in the response
             const jsonMatch = responseJson.match(/```json\n([\s\S]*?)\n```/);
             if (jsonMatch && jsonMatch[1]) {
                 try {
@@ -66,10 +65,10 @@ class WorkerAgent extends BaseAgent {
                         return parsed;
                     }
                 } catch (parseError) {
-                     throw new Error(`Failed to parse tool call from LLM response, even after finding a JSON block. Error: ${parseError.message}`);
+                     throw new Error(`无法从LLM响应中解析工具调用，即使在找到JSON块之后。错误: ${parseError.message}`);
                 }
             }
-            throw new Error(`Failed to parse tool call from LLM response. Error: ${e.message}`);
+            throw new Error(`无法从LLM响应中解析工具调用。错误: ${e.message}`);
         }
     }
 }

@@ -1,17 +1,17 @@
 const { BaseAgent } = require('./baseAgent.js');
 
-const SYSTEM_PROMPT = `You are a Lead Reviewer. You have been given a collection of reviews for a software artifact, each from a different AI assistant. Your job is to synthesize all of this feedback into a single, clear, and actionable critique.
+const SYSTEM_PROMPT = `你是一位“首席评审员”。你收到了一系列针对某个软件产物的评审意见，每一条都来自不同的AI助手。你的工作是将所有这些反馈整合成一个单一、清晰、可操作的最终评审。
 
-You will receive the original user request and a list of evaluations, each containing a score and suggestions.
+你将收到原始的用户请求和一系列评估结果，每个评估都包含一个分数和一些建议。
 
-Your tasks are:
-1.  **Synthesize Suggestions:** Combine all the suggestions into a single, de-duplicated, and cohesive list of improvements. Remove redundant points and merge similar ideas.
-2.  **Determine a Final Score:** Based on the provided scores and your own assessment of the feedback, determine a final, single score for the artifact. This could be an average, a weighted average, or the lowest score if the feedback indicates critical issues.
-3.  **Provide a Summary:** Write a brief, high-level summary of the overall assessment.
+你的任务是：
+1.  **整合建议：** 将所有建议合并成一个单一、去重且连贯的改进列表。删除冗余的观点，合并相似的想法。
+2.  **决定最终分数：** 基于所提供的分数和你对反馈的评估，确定一个最终的、单一的产物分数。这可以是平均分、加权平均分，或者在反馈指出严重问题时的最低分。
+3.  **提供总结：** 撰写一个简短、高度概括的总体评估总结。
 
-You must output your final critique as a single JSON object with three keys: "score" (a number), "suggestions" (an array of strings), and "summary" (a string).
+你必须以一个包含三个键的JSON对象的形式输出你的最终评审："score" (一个数字)，"suggestions" (一个字符串数组)，和 "summary" (一个字符串)。
 
-Do not add any explanation. Just output the JSON object.`;
+不要添加任何解释。只输出JSON对象。`;
 
 class CritiqueAggregationAgent extends BaseAgent {
     constructor(modelConfig) {
@@ -25,9 +25,9 @@ class CritiqueAggregationAgent extends BaseAgent {
      * @returns {Promise<{score: number, suggestions: string[], summary: string}>} The aggregated critique.
      */
     async executeTask(evaluations, taskContext) {
-        let userPrompt = `The original user request was: "${taskContext.originalUserRequest}"`;
-        userPrompt += `\n\nHere are the evaluations from the team:\n${JSON.stringify(evaluations, null, 2)}`;
-        userPrompt += `\n\nPlease synthesize these evaluations into a single, final critique in the specified JSON format.`;
+        let userPrompt = `原始用户请求是: "${taskContext.originalUserRequest}"`;
+        userPrompt += `\n\n这是来自团队的评估结果:\n${JSON.stringify(evaluations, null, 2)}`;
+        userPrompt += `\n\n请将这些评估整合成一个单一的、最终的评审，并以指定的JSON格式输出。`;
 
         const responseJson = await this.llmRequest(userPrompt, true);
         try {
@@ -35,7 +35,7 @@ class CritiqueAggregationAgent extends BaseAgent {
             if (responseObject && typeof responseObject.score === 'number' && Array.isArray(responseObject.suggestions) && typeof responseObject.summary === 'string') {
                 return responseObject;
             } else {
-                throw new Error("Response from Critique Aggregation Agent is not a valid critique.");
+                throw new Error("来自评审聚合者的响应不是一个有效的评审结果。");
             }
         } catch (e) {
             const jsonMatch = responseJson.match(/```json\n([\s\S]*?)\n```/);
@@ -46,10 +46,10 @@ class CritiqueAggregationAgent extends BaseAgent {
                         return parsed;
                     }
                 } catch (parseError) {
-                    throw new Error(`Failed to parse critique from LLM response, even after finding a JSON block. Error: ${parseError.message}`);
+                    throw new Error(`无法从LLM响应中解析评审结果，即使在找到JSON块之后。错误: ${parseError.message}`);
                 }
             }
-            throw new Error(`Failed to parse critique from LLM response. Error: ${e.message}`);
+            throw new Error(`无法从LLM响应中解析评审结果。错误: ${e.message}`);
         }
     }
 }

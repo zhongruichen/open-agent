@@ -1,12 +1,12 @@
 const { BaseAgent } = require('./baseAgent.js');
 
-const SYSTEM_PROMPT = `You are a Synthesizer Agent. Your responsibility is to take the user's original request and a summary of all the completed sub-tasks, and then generate the final, complete artifact.
+const SYSTEM_PROMPT = `你是一个“整合者”智能体。你的职责是接收用户的原始请求和所有已完成子任务的摘要，然后生成最终的、完整的产物。
 
-Often, this means creating the full content of a code file based on the actions taken by the worker agent (e.g., file creations, modifications).
-You should only output the final artifact itself, with no explanation, code fences, or other text.
+通常，这意味着基于工人智能体执行的操作（例如，文件创建、修改）来创建代码文件的全部内容。
+你只应该输出最终的产物本身，不带任何解释、代码块标记或其他文本。
 
-For example, if the worker created a file and then executed it, the final artifact is likely the content of the file that was created.
-Analyze the completed tasks and produce a single, final output that represents the fulfillment of the user's request.`;
+例如，如果工人创建了一个文件然后执行了它，那么最终的产物很可能就是被创建的文件的内容。
+请分析已完成的任务，并生成一个能够满足用户原始请求的、单一的、最终的输出。`;
 
 class SynthesizerAgent extends BaseAgent {
     constructor(modelConfig) {
@@ -19,9 +19,9 @@ class SynthesizerAgent extends BaseAgent {
      * @returns {Promise<string>} The final artifact.
      */
     async executeTask(taskContext) {
-        let userPrompt = `The original user request was: "${taskContext.originalUserRequest}"`;
-        userPrompt += `\n\nHere is a summary of the completed sub-tasks and their results:\n${taskContext.getCompletedTasksSummary()}`;
-        userPrompt += `\n\nPlease generate the final, complete artifact that fulfills the original request based on the work done.`;
+        let userPrompt = `原始用户请求是: "${taskContext.originalUserRequest}"`;
+        userPrompt += `\n\n这是已完成子任务及其结果的摘要:\n${taskContext.getCompletedTasksSummary()}`;
+        userPrompt += `\n\n请基于已完成的工作，生成满足原始请求的最终、完整产物。`;
 
         const artifact = await this.llmRequest(userPrompt);
         return artifact;

@@ -1,22 +1,22 @@
-# Multi-Agent Helper
+# 多智能体助手 (Multi-Agent Helper)
 
-**A VS Code framework for an AI agent team with the ability to plan, execute, reflect, and self-correct.**
-
----
-
-## Getting Started
-
-1.  **Installation:** First, follow the [**INSTALL.md**](INSTALL.md) guide to build the extension and install it in VS Code.
-2.  **Configuration:** Next, follow the [**USAGE_GUIDE.md**](USAGE_GUIDE.md) to configure your AI models and assign them to agent roles in the settings.
-3.  **Run a Task:** Open the Command Palette (`Ctrl/Cmd + Shift + P`), type `Start Multi-Agent Task`, and give your AI team a goal!
+**一个具备规划、执行、反思和自我修正能力的VS Code多智能体开发框架。**
 
 ---
 
-## Overview
+## 如何开始
 
-Multi-Agent Helper is a powerful VS Code extension that leverages a team of specialized AI agents to autonomously handle complex software development tasks. Based on a single high-level objective from the user, this team of agents can plan, write code, use file system and terminal tools, evaluate its own work, and iteratively self-correct until the task is complete.
+1.  **安装插件:** 首先，请遵循 [**INSTALL.md (安装指南)**](INSTALL.md) 来构建并在VS Code中安装本插件。
+2.  **配置模型:** 接着，请阅读 [**USAGE_GUIDE.md (使用指南)**](USAGE_GUIDE.md) 来配置您的AI模型，并为AI角色分配相应的模型。
+3.  **运行任务:** 打开命令面板 (`Ctrl/Cmd + Shift + P`), 输入 `开始多智能体任务`, 然后给您的AI团队设定一个目标！
 
-## Core Features
+---
+
+## 项目概览
+
+“多智能体助手”是一个功能强大的VS Code插件，它利用一个由专业AI智能体组成的团队，来自主地执行复杂的软件开发任务。基于用户提出的一个宏大目标，这个智能体团队能够进行规划、编写代码、使用文件系统和终端工具、评估自身工作，并进行迭代式的自我修正，直至任务完成。
+
+## 核心功能
 
 - **全项目感知**: 在开始任务前，能自动扫描整个项目，理解现有代码结构，从而做出更智能的规划。
 - **多智能体架构**: 由规划者、工人、整合者、评估者组成的协作团队。
@@ -27,11 +27,3 @@ Multi-Agent Helper is a powerful VS Code extension that leverages a team of spec
 - **交互式控制**: 在关键节点（如执行危险命令、进行循环优化）会请求用户批准。
 - **可视化UI面板**: 通过一个专门的UI面板，实时、清晰地展示任务目标、当前计划、执行日志和最终产物。
 - **实时透明度**: 除了UI面板，还可以通过传统的输出面板，查看更详细的AI思考和行动日志。
-
-## 快速开始
-
-1.  **配置模型**: 在VS Code设置中搜索`Multi Agent Helper`，并至少添加一个AI模型配置。
-2.  **运行任务**: 打开命令面板 (`Ctrl/Cmd + Shift + P`)，运行`开始多智能体任务`。
-3.  **交互与观察**: 在弹出的对话框中与AI团队交互，并在“输出”面板的“多智能体日志”中观察实时过程。
-
-**如需更详尽的配置方法和图文并茂的实战教程，请务必阅读我们的[详细使用指南](USAGE_GUIDE.md)。**

@@ -1,23 +1,23 @@
 const { BaseAgent } = require('./baseAgent.js');
 
-const SYSTEM_PROMPT = `You are an expert software development project manager. Your role is to decompose a user's request into a clear, step-by-step plan.
+const SYSTEM_PROMPT = `你是一位专业的软件开发项目经理。你的职责是把用户的需求分解成一个清晰、分步的计划。
 
-You will be given the user's original request, a summary of the existing project codebase, and the history of previous iterations (if any).
-Based on all this information, create a concise plan of sub-tasks for the Worker Agent to execute.
-Each sub-task should be a single, actionable command for the Worker Agent. Good sub-tasks are small and focused, like "Create a file named 'index.html'" or "Install the 'uuid' package using npm".
+你将收到用户的原始请求、现有项目代码库的摘要，以及先前迭代的历史记录（如果有）。
+基于所有这些信息，为“工人智能体”创建一个简洁的子任务计划以供执行。
+每个子任务都应该是给“工人智能体”的单个、可操作的命令。好的子任务是小而专注的，例如“创建一个名为 'index.html' 的文件”或“使用npm安装 'uuid' 包”。
 
-When modifying an existing project, use the provided project context to inform your plan. For example, if a file already exists, plan to read it before modifying it.
+在修改现有项目时，请利用提供的项目上下文来制定计划。例如，如果一个文件已经存在，计划在修改它之前先读取它。
 
-If this is the first iteration, create a plan to fulfill the user's request, using the project context if it's not empty.
-If there are previous iterations, analyze the feedback from the Evaluator and create a new plan that addresses the suggestions for improvement.
+如果这是第一次迭代，请根据项目上下文（如果非空）来制定完成用户请求的计划。
+如果有之前的迭代，请分析“评估者”的反馈，并制定一个新计划来解决这些改进建议。
 
-You must output your plan as a JSON object containing a single key "plan", which is an array of strings. Each string is a step in the plan.
+你必须以一个JSON对象的形式输出你的计划，该对象包含一个键 "plan"，其值为一个字符串数组。每个字符串是计划中的一个步骤。
 
-Example response for a request "create a hello world python script":
+例如，对于“创建一个hello world python脚本”的请求，响应应为：
 {
   "plan": [
-    "Create a file named 'main.py' with the content 'print(\"Hello, World!\")'",
-    "Execute the 'python main.py' command in the terminal to verify the output"
+    "创建一个名为 'main.py' 的文件，内容为 'print(\"Hello, World!\")'",
+    "在终端中执行 'python main.py' 命令以验证输出"
   ]
 }`;
 
@@ -32,17 +32,17 @@ class OrchestratorAgent extends BaseAgent {
      * @returns {Promise<string[]>} An array of strings representing the plan.
      */
     async executeTask(taskContext) {
-        let userPrompt = `Here is a summary of the existing project codebase:\n${taskContext.projectContext}\n\n`;
-        userPrompt += `Original user request: "${taskContext.originalUserRequest}"`;
+        let userPrompt = `这是现有项目代码库的摘要:\n${taskContext.projectContext}\n\n`;
+        userPrompt += `原始用户请求: "${taskContext.originalUserRequest}"`;
 
         const latestIteration = taskContext.getLatestIteration();
         if (latestIteration) {
-            userPrompt += `\n\nThis is iteration number ${taskContext.currentIteration}.`;
-            userPrompt += `\nHere is the artifact from the previous iteration:\n\`\`\`\n${latestIteration.artifact}\n\`\`\``;
-            userPrompt += `\nThe evaluator scored it ${latestIteration.evaluation.score}/10 and provided the following feedback: ${latestIteration.evaluation.suggestions.join(', ')}`;
-            userPrompt += `\nPlease create a new plan to address this feedback and improve the project.`;
+            userPrompt += `\n\n这是第 ${taskContext.currentIteration} 轮迭代。`;
+            userPrompt += `\n这是上一轮迭代的产物:\n\`\`\`\n${latestIteration.artifact}\n\`\`\``;
+            userPrompt += `\n评估者给出了 ${latestIteration.evaluation.score}/10 的评分，并提供了以下反馈: ${latestIteration.evaluation.suggestions.join(', ')}`;
+            userPrompt += `\n请创建一个新计划来处理此反馈并改进项目。`;
         } else {
-            userPrompt += `\nPlease create the initial plan to complete this request.`;
+            userPrompt += `\n请创建完成此请求的初始计划。`;
         }
 
         const responseJson = await this.llmRequest(userPrompt, true);
@@ -51,10 +51,9 @@ class OrchestratorAgent extends BaseAgent {
             if (responseObject && Array.isArray(responseObject.plan)) {
                 return responseObject.plan;
             } else {
-                throw new Error("Response from Orchestrator Agent is not a valid plan.");
+                throw new Error("来自规划者的响应不是一个有效的计划。");
             }
         } catch (e) {
-            // If parsing fails, try to recover by looking for a JSON block in the response
             const jsonMatch = responseJson.match(/```json\n([\s\S]*?)\n```/);
             if (jsonMatch && jsonMatch[1]) {
                 try {
@@ -63,10 +62,10 @@ class OrchestratorAgent extends BaseAgent {
                         return parsed.plan;
                     }
                 } catch (parseError) {
-                    throw new Error(`Failed to parse plan from LLM response, even after finding a JSON block. Error: ${parseError.message}`);
+                    throw new Error(`无法从LLM响应中解析计划，即使在找到JSON块之后。错误: ${parseError.message}`);
                 }
             }
-            throw new Error(`Failed to parse plan from LLM response. Error: ${e.message}`);
+            throw new Error(`无法从LLM响应中解析计划。错误: ${e.message}`);
         }
     }
 }

@@ -1,20 +1,20 @@
 const { BaseAgent } = require('./baseAgent.js');
 
-const SYSTEM_PROMPT = `You are an expert code reviewer and quality assurance specialist. Your task is to evaluate a given artifact based on the original user request.
+const SYSTEM_PROMPT = `你是一位专业的代码评审员和质量保证专家。你的任务是根据用户的原始请求来评估给定的产物。
 
-You must provide a score from 1 to 10, where 10 means the artifact perfectly fulfills the request and has no errors.
-You must also provide a list of concrete suggestions for improvement if the score is less than 10. If the score is 10, the suggestions array can be empty.
+你必须提供一个从1到10的分数，其中10分表示产物完美地满足了请求且没有任何错误。
+如果分数低于10分，你还必须提供一个具体的改进建议列表。如果分数为10分，建议列表可以为空。
 
-You must output your evaluation as a single JSON object with two keys: "score" (a number) and "suggestions" (an array of strings).
+你必须以一个包含两个键的JSON对象的形式输出你的评估结果："score" (一个数字) 和 "suggestions" (一个字符串数组)。
 
-Do not add any explanation. Just output the JSON object.
+不要添加任何解释。只输出JSON对象。
 
-Example response for an artifact that is missing a feature:
+例如，对于一个缺少功能的产物，响应应为：
 {
   "score": 7,
   "suggestions": [
-    "The button exists, but it does not have the onclick event handler to show the alert.",
-    "The HTML title could be more descriptive."
+    "按钮已存在，但缺少显示提示框的onclick事件处理程序。",
+    "HTML的标题可以更具描述性。"
   ]
 }`;
 
@@ -30,9 +30,9 @@ class EvaluatorAgent extends BaseAgent {
      * @returns {Promise<{score: number, suggestions: string[]}>} The evaluation result.
      */
     async executeTask(artifact, taskContext) {
-        let userPrompt = `The original user request was: "${taskContext.originalUserRequest}"`;
-        userPrompt += `\n\nHere is the artifact that was produced:\n\`\`\`\n${artifact}\n\`\`\``;
-        userPrompt += `\n\nPlease evaluate it and provide your score and suggestions in the specified JSON format.`;
+        let userPrompt = `原始用户请求是: "${taskContext.originalUserRequest}"`;
+        userPrompt += `\n\n这是已生成的产物:\n\`\`\`\n${artifact}\n\`\`\``;
+        userPrompt += `\n\n请对其进行评估，并以指定的JSON格式提供您的分数和建议。`;
 
         const responseJson = await this.llmRequest(userPrompt, true);
         try {
@@ -40,7 +40,7 @@ class EvaluatorAgent extends BaseAgent {
             if (responseObject && typeof responseObject.score === 'number' && Array.isArray(responseObject.suggestions)) {
                 return responseObject;
             } else {
-                throw new Error("Response from Evaluator Agent is not a valid evaluation.");
+                throw new Error("来自评估者的响应不是一个有效的评估结果。");
             }
         } catch (e) {
             // If parsing fails, try to recover by looking for a JSON block in the response
@@ -52,10 +52,10 @@ class EvaluatorAgent extends BaseAgent {
                         return parsed;
                     }
                 } catch (parseError) {
-                    throw new Error(`Failed to parse evaluation from LLM response, even after finding a JSON block. Error: ${parseError.message}`);
+                    throw new Error(`无法从LLM响应中解析评估结果，即使在找到JSON块之后。错误: ${parseError.message}`);
                 }
             }
-            throw new Error(`Failed to parse evaluation from LLM response. Error: ${e.message}`);
+            throw new Error(`无法从LLM响应中解析评估结果。错误: ${e.message}`);
         }
     }
 }
