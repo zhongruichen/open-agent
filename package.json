@@ -88,6 +88,10 @@
             "critiqueAggregator": {
               "type": "string",
               "description": "用于总结和整合评估团队反馈的模型。"
+            },
+            "codebaseScanner": {
+              "type": "string",
+              "description": "用于扫描和总结代码库中文件内容的模型。建议使用速度快的模型。"
             }
           }
         }

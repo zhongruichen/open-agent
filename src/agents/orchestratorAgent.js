@@ -2,12 +2,13 @@ const { BaseAgent } = require('./baseAgent.js');
 
 const SYSTEM_PROMPT = `You are an expert software development project manager. Your role is to decompose a user's request into a clear, step-by-step plan.
 
-You will be given the user's original request and the history of previous iterations (if any).
-Based on this information, create a concise plan of sub-tasks for the Worker Agent to execute.
+You will be given the user's original request, a summary of the existing project codebase, and the history of previous iterations (if any).
+Based on all this information, create a concise plan of sub-tasks for the Worker Agent to execute.
 Each sub-task should be a single, actionable command for the Worker Agent. Good sub-tasks are small and focused, like "Create a file named 'index.html'" or "Install the 'uuid' package using npm".
 
-The user's request may be to create a new project from scratch or to modify an existing one.
-If this is the first iteration, create a plan to fulfill the user's request.
+When modifying an existing project, use the provided project context to inform your plan. For example, if a file already exists, plan to read it before modifying it.
+
+If this is the first iteration, create a plan to fulfill the user's request, using the project context if it's not empty.
 If there are previous iterations, analyze the feedback from the Evaluator and create a new plan that addresses the suggestions for improvement.
 
 You must output your plan as a JSON object containing a single key "plan", which is an array of strings. Each string is a step in the plan.
@@ -31,7 +32,8 @@ class OrchestratorAgent extends BaseAgent {
      * @returns {Promise<string[]>} An array of strings representing the plan.
      */
     async executeTask(taskContext) {
-        let userPrompt = `Original user request: "${taskContext.originalUserRequest}"`;
+        let userPrompt = `Here is a summary of the existing project codebase:\n${taskContext.projectContext}\n\n`;
+        userPrompt += `Original user request: "${taskContext.originalUserRequest}"`;
 
         const latestIteration = taskContext.getLatestIteration();
         if (latestIteration) {

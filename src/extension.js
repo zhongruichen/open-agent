@@ -1,4 +1,6 @@
 const vscode = require('vscode');
+const fs = require('fs').promises;
+const path = require('path');
 const { getModelsForRole } = require('./config');
 const logger = require('./logger');
 const { executeTool } = require('./tools/toolRegistry');
@@ -8,7 +10,48 @@ const { WorkerAgent } = require('./agents/workerAgent');
 const { SynthesizerAgent } = require('./agents/synthesizerAgent');
 const { EvaluatorAgent } = require('./agents/evaluatorAgent');
 const { CritiqueAggregationAgent } = require('./agents/critiqueAggregationAgent');
+const { CodebaseScannerAgent } = require('./agents/codebaseScannerAgent');
 const { MainPanel } = require('./ui/mainPanel');
+
+async function scanProject(scannerAgent) {
+    MainPanel.update({ command: 'log', text: 'Scanning project codebase...' });
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders) {
+        return "No workspace is open.";
+    }
+    const rootPath = workspaceFolders[0].uri.fsPath;
+    let projectContext = "Project Structure:\n";
+    const ignoreDirs = new Set(['.git', 'node_modules', 'dist', 'out', '.vscode']);
+    const ignoreExtensions = new Set(['.lock', '.svg', '.png', '.jpg', '.jpeg', '.gif']);
+
+    async function walk(dir, indent = '') {
+        const entries = await fs.readdir(dir, { withFileTypes: true });
+        for (const entry of entries) {
+            if (ignoreDirs.has(entry.name)) continue;
+
+            const fullPath = path.join(dir, entry.name);
+            if (entry.isDirectory()) {
+                projectContext += `${indent}- ${entry.name}/\n`;
+                await walk(fullPath, indent + '  ');
+            } else {
+                if (ignoreExtensions.has(path.extname(entry.name))) continue;
+
+                try {
+                    const content = await fs.readFile(fullPath, 'utf-8');
+                    const summary = await scannerAgent.executeTask(content);
+                    projectContext += `${indent}- ${entry.name}: ${summary}\n`;
+                } catch (e) {
+                    projectContext += `${indent}- ${entry.name}: (Could not read or summarize file)\n`;
+                }
+            }
+        }
+    }
+
+    await walk(rootPath);
+    MainPanel.update({ command: 'log', text: 'Project scan complete.' });
+    return projectContext;
+}
+
 
 function activate(context) {
     let disposable = vscode.commands.registerCommand('multi-agent-helper.startTask', async () => {
@@ -22,6 +65,16 @@ function activate(context) {
                 return;
             }
             MainPanel.update({ command: 'updateGoal', text: userRequest });
+
+            // --- New Scanning Phase ---
+            const scannerConfigs = getModelsForRole('codebaseScanner');
+            if (!scannerConfigs) {
+                vscode.window.showErrorMessage("Model configuration for Codebase Scanner is missing.");
+                return;
+            }
+            const scannerAgent = new CodebaseScannerAgent(scannerConfigs[0]);
+            const projectContextStr = await scanProject(scannerAgent);
+            // --- End Scanning Phase ---
 
             const orchestratorConfigs = getModelsForRole('orchestrator');
             const workerConfigs = getModelsForRole('worker');
@@ -39,6 +92,7 @@ function activate(context) {
             const synthesizer = new SynthesizerAgent(synthesizerConfigs[0]);
             const critiqueAggregator = new CritiqueAggregationAgent(critiqueAggregatorConfigs[0]);
             const taskContext = new TaskContext(userRequest);
+            taskContext.projectContext = projectContextStr; // Add context to the task
 
             const MAX_ITERATIONS = 10;
             for (let i = 0; i < MAX_ITERATIONS; i++) {
@@ -79,7 +133,6 @@ function activate(context) {
                             lastError = e.message;
                             MainPanel.update({ command: 'log', text: `Attempt ${attempts} failed: ${lastError}` });
                             if (attempts < MAX_ATTEMPTS_PER_TASK) {
-                                // Augment the task description with the error for the next attempt
                                 const originalDescription = subTask.description.split('\n\n')[0];
                                 subTask.description = `${originalDescription}\n\n(Previous attempt failed with error: ${lastError}). Please analyze this error and try a different approach.`;
                                 MainPanel.update({ command: 'log', text: `Retrying...` });

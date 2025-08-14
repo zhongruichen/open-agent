@@ -19,6 +19,7 @@ class TaskContext {
         this.history = [];
         this.currentIteration = 1;
         this.overallProgress = ""; // A summary of what has been done so far.
+        this.projectContext = ""; // A summary of the existing codebase.
     }
 
     /**
